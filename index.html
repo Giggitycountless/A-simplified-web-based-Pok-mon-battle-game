@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宝可梦对战 - 终极对战平台</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0F172A;
+            overflow-x: hidden;
+        }
+        .orbitron {
+            font-family: 'Orbitron', monospace;
+        }
+        .hero-bg {
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
+            position: relative;
+        }
+        .glow {
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        }
+        .glow-purple {
+            box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+        }
+        .text-glow {
+            text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-10px) rotateX(5deg);
+            box-shadow: 0 20px 40px rgba(6, 182, 212, 0.2);
+        }
+        .particle-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        .content-overlay {
+            position: relative;
+            z-index: 10;
+        }
+        .battle-arena {
+            background: url('resources/hero-battle-arena.png') center/cover;
+            position: relative;
+        }
+        .battle-arena::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.7);
+        }
+        .nav-blur {
+            backdrop-filter: blur(10px);
+            background: rgba(15, 23, 42, 0.8);
+        }
+        .skill-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #06B6D4, #8B5CF6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .type-badge {
+            background: linear-gradient(135deg, #06B6D4, #0891B2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .battle-button {
+            background: linear-gradient(135deg, #F97316, #EA580C);
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .battle-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(249, 115, 22, 0.3);
+        }
+        .battle-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        .battle-button:hover::before {
+            left: 100%;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white">
+    <!-- 粒子背景 -->
+    <div id="particle-container" class="particle-bg"></div>
+
+    <!-- 导航栏 -->
+    <nav class="fixed top-0 left-0 right-0 z-50 nav-blur border-b border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">P</span>
+                    </div>
+                    <span class="orbitron font-bold text-xl text-cyan-400">POKÉBATTLE</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="index.html" class="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">首页</a>
+                    <a href="battle.html" class="text-white hover:text-cyan-300 transition-colors font-medium">对战模拟器</a>
+                    <a href="pokedex.html" class="text-white hover:text-cyan-300 transition-colors font-medium">宝可梦图鉴</a>
+                    <a href="trainer.html" class="text-white hover:text-cyan-300 transition-colors font-medium">训练师档案</a>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-btn" class="text-white">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 英雄区域 -->
+    <section class="hero-bg min-h-screen flex items-center justify-center relative overflow-hidden pt-16">
+        <div class="content-overlay max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- 左侧内容 -->
+                <div class="text-center lg:text-left">
+                    <h1 class="orbitron font-black text-5xl md:text-7xl mb-6 text-glow">
+                        <span class="block text-cyan-400">宝可梦</span>
+                        <span class="block text-purple-400">终极对战</span>
+                    </h1>
+                    <p class="text-xl md:text-2xl text-slate-300 mb-8 leading-relaxed">
+                        体验最真实的宝可梦对战模拟器，掌握属性相克，组建最强战队，成为顶尖训练师！
+                    </p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
+                        <button class="battle-button" onclick="window.location.href='battle.html'">
+                            开始对战
+                        </button>
+                        <button class="bg-slate-700 hover:bg-slate-600 text-white px-8 py-4 rounded-xl font-bold transition-all duration-300 hover:transform hover:-translate-y-1">
+                            查看图鉴
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 右侧对战预览 -->
+                <div class="relative">
+                    <div class="battle-arena rounded-3xl p-8 h-96 relative overflow-hidden">
+                        <div class="relative z-10 h-full flex items-center justify-between">
+                            <!-- 左侧宝可梦 -->
+                            <div class="text-center">
+                                <div class="w-24 h-24 bg-gradient-to-r from-red-500 to-orange-500 rounded-full mx-auto mb-4 flex items-center justify-center glow">
+                                    <span class="text-2xl">🔥</span>
+                                </div>
+                                <div class="type-badge mb-2">火系</div>
+                                <div class="text-sm text-slate-300">喷火龙</div>
+                                <div class="w-32 bg-slate-700 rounded-full h-2 mt-2">
+                                    <div class="bg-green-400 h-2 rounded-full" style="width: 80%"></div>
+                                </div>
+                            </div>
+
+                            <!-- VS标识 -->
+                            <div class="text-center">
+                                <div class="orbitron font-black text-4xl text-cyan-400 mb-4">VS</div>
+                                <div class="skill-icon mx-auto">⚡</div>
+                            </div>
+
+                            <!-- 右侧宝可梦 -->
+                            <div class="text-center">
+                                <div class="w-24 h-24 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full mx-auto mb-4 flex items-center justify-center glow-purple">
+                                    <span class="text-2xl">💧</span>
+                                </div>
+                                <div class="type-badge mb-2">水系</div>
+                                <div class="text-sm text-slate-300">水箭龟</div>
+                                <div class="w-32 bg-slate-700 rounded-full h-2 mt-2">
+                                    <div class="bg-green-400 h-2 rounded-full" style="width: 65%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 特色功能展示 -->
+    <section class="py-20 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="orbitron font-bold text-4xl md:text-5xl text-cyan-400 mb-4">核心功能</h2>
+                <p class="text-xl text-slate-300 max-w-3xl mx-auto">
+                    全方位的宝可梦对战体验，从新手到大师的成长之路
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- 对战模拟器 -->
+                <div class="bg-slate-800 rounded-2xl p-8 card-hover border border-slate-700">
+                    <div class="w-16 h-16 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center mb-6">
+                        <span class="text-2xl">⚔️</span>
+                    </div>
+                    <h3 class="orbitron font-bold text-2xl text-white mb-4">对战模拟器</h3>
+                    <p class="text-slate-300 mb-6">
+                        实时对战模拟，支持技能选择、属性相克计算，体验真实的宝可梦对战乐趣。
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="type-badge">实时对战</span>
+                        <span class="type-badge">技能系统</span>
+                        <span class="type-badge">属性相克</span>
+                    </div>
+                    <button class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                        立即体验
+                    </button>
+                </div>
+
+                <!-- 属性计算器 -->
+                <div class="bg-slate-800 rounded-2xl p-8 card-hover border border-slate-700">
+                    <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center mb-6">
+                        <span class="text-2xl">🧮</span>
+                    </div>
+                    <h3 class="orbitron font-bold text-2xl text-white mb-4">属性计算器</h3>
+                    <p class="text-slate-300 mb-6">
+                        精准的18种属性相克计算，帮助你制定最佳对战策略，轻松应对各种对手。
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="type-badge">18种属性</span>
+                        <span class="type-badge">相克关系</span>
+                        <span class="type-badge">策略指导</span>
+                    </div>
+                    <button class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                        开始计算
+                    </button>
+                </div>
+
+                <!-- 团队构建器 -->
+                <div class="bg-slate-800 rounded-2xl p-8 card-hover border border-slate-700">
+                    <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-6">
+                        <span class="text-2xl">🏗️</span>
+                    </div>
+                    <h3 class="orbitron font-bold text-2xl text-white mb-4">团队构建器</h3>
+                    <p class="text-slate-300 mb-6">
+                        智能推荐最优团队配置，平衡属性分布，让你的战队无懈可击。
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-6">
+                        <span class="type-badge">智能推荐</span>
+                        <span class="type-badge">平衡分析</span>
+                        <span class="type-badge">团队优化</span>
+                    </div>
+                    <button class="w-full bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-lg font-semibold transition-colors">
+                        构建团队
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 热门宝可梦轮播 -->
+    <section class="py-20 bg-slate-800/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="orbitron font-bold text-4xl md:text-5xl text-cyan-400 mb-4">热门宝可梦</h2>
+                <p class="text-xl text-slate-300">
+                    探索最受欢迎的宝可梦，了解它们的特性和战斗技巧
+                </p>
+            </div>
+
+            <div class="splide" id="pokemon-carousel">
+                <div class="splide__track">
+                    <ul class="splide__list">
+                        <li class="splide__slide">
+                            <div class="bg-slate-800 rounded-2xl p-6 text-center border border-slate-700 card-hover">
+                                <div class="w-24 h-24 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                    <span class="text-3xl">⚡</span>
+                                </div>
+                                <h3 class="orbitron font-bold text-xl text-white mb-2">皮卡丘</h3>
+                                <div class="type-badge mb-4">电系</div>
+                                <p class="text-slate-300 text-sm mb-4">
+                                    招牌技能：十万伏特、电光一闪、铁尾
+                                </p>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span class="text-slate-400">攻击</span>
+                                        <div class="w-full bg-slate-700 rounded-full h-2 mt-1">
+                                            <div class="bg-red-400 h-2 rounded-full" style="width: 85%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-400">速度</span>
+                                        <div class="w-full bg-slate-700 rounded-full h-2 mt-1">
+                                            <div class="bg-blue-400 h-2 rounded-full" style="width: 90%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="splide__slide">
+                            <div class="bg-slate-800 rounded-2xl p-6 text-center border border-slate-700 card-hover">
+                                <div class="w-24 h-24 bg-gradient-to-r from-red-500 to-orange-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                    <span class="text-3xl">🔥</span>
+                                </div>
+                                <h3 class="orbitron font-bold text-xl text-white mb-2">喷火龙</h3>
+                                <div class="type-badge mb-4">火/飞行</div>
+                                <p class="text-slate-300 text-sm mb-4">
+                                    招牌技能：喷射火焰、龙之怒、翅膀攻击
+                                </p>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span class="text-slate-400">攻击</span>
+                                        <div class="w-full bg-slate-700 rounded-full h-2 mt-1">
+                                            <div class="bg-red-400 h-2 rounded-full" style="width: 95%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-400">特攻</span>
+                                        <div class="w-full bg-slate-700 rounded-full h-2 mt-1">
+                                            <div class="bg-purple-400 h-2 rounded-full" style="width: 88%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="splide__slide">
+                            <div class="bg-slate-800 rounded-2xl p-6 text-center border border-slate-700 card-hover">
+                                <div class="w-24 h-24 bg-gradient-to-r from-blue-500 to-cyan-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                    <span class="text-3xl">💧</span>
+                                </div>
+                                <h3 class="orbitron font-bold text-xl text-white mb-2">水箭龟</h3>
+                                <div class="type-badge mb-4">水系</div>
+                                <p class="text-slate-300 text-sm mb-4">
+                                    招牌技能：水炮、冰冻光束、火箭头锤
+                                </p>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span class="text-slate-400">防御</span>
+                                        <div class="w-full bg-slate-700 rounded-full h-2 mt-1">
+                                            <div class="bg-green-400 h-2 rounded-full" style="width: 92%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-400">特防</span>
+                                        <div class="w-full bg-slate-700 rounded-full h-2 mt-1">
+                                            <div class="bg-indigo-400 h-2 rounded-full" style="width: 85%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                        <li class="splide__slide">
+                            <div class="bg-slate-800 rounded-2xl p-6 text-center border border-slate-700 card-hover">
+                                <div class="w-24 h-24 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full mx-auto mb-4 flex items-center justify-center">
+                                    <span class="text-3xl">💜</span>
+                                </div>
+                                <h3 class="orbitron font-bold text-xl text-white mb-2">超梦</h3>
+                                <div class="type-badge mb-4">超能力</div>
+                                <p class="text-slate-300 text-sm mb-4">
+                                    招牌技能：精神强念、影子球、自我再生
+                                </p>
+                                <div class="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <span class="text-slate-400">特攻</span>
+                                        <div class="w-full bg-slate-700 rounded-full h-2 mt-1">
+                                            <div class="bg-purple-400 h-2 rounded-full" style="width: 100%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="text-slate-400">速度</span>
+                                        <div class="w-full bg-slate-700 rounded-full h-2 mt-1">
+                                            <div class="bg-blue-400 h-2 rounded-full" style="width: 95%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="bg-slate-900 border-t border-slate-700 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="flex items-center justify-center space-x-2 mb-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">P</span>
+                    </div>
+                    <span class="orbitron font-bold text-xl text-cyan-400">POKÉBATTLE</span>
+                </div>
+                <p class="text-slate-400 mb-4">
+                    最专业的宝可梦对战模拟平台，为训练师们提供最真实的对战体验
+                </p>
+                <p class="text-slate-500 text-sm">
+                    © 2025 POKÉBATTLE. 本平台仅用于学习和娱乐目的。
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>

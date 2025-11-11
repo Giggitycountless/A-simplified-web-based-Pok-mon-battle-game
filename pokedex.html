@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>宝可梦图鉴 - 宝可梦对战</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.0/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0F172A;
+            overflow-x: hidden;
+        }
+        .orbitron {
+            font-family: 'Orbitron', monospace;
+        }
+        .pokedex-bg {
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
+            position: relative;
+        }
+        .nav-blur {
+            backdrop-filter: blur(10px);
+            background: rgba(15, 23, 42, 0.8);
+        }
+        .pokemon-card {
+            background: linear-gradient(135deg, #1E293B, #334155);
+            border: 2px solid #475569;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .pokemon-card:hover {
+            border-color: #06B6D4;
+            box-shadow: 0 10px 25px rgba(6, 182, 212, 0.2);
+            transform: translateY(-5px);
+        }
+        .pokemon-card.selected {
+            border-color: #06B6D4;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
+        }
+        .type-filter {
+            background: linear-gradient(135deg, #1E293B, #334155);
+            border: 2px solid #475569;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        .type-filter:hover, .type-filter.active {
+            border-color: #06B6D4;
+            box-shadow: 0 5px 15px rgba(6, 182, 212, 0.3);
+        }
+        .type-badge {
+            background: linear-gradient(135deg, #06B6D4, #0891B2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .type-badge.fire { background: linear-gradient(135deg, #EF4444, #DC2626); }
+        .type-badge.water { background: linear-gradient(135deg, #3B82F6, #1D4ED8); }
+        .type-badge.electric { background: linear-gradient(135deg, #F59E0B, #D97706); }
+        .type-badge.grass { background: linear-gradient(135deg, #10B981, #059669); }
+        .type-badge.psychic { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
+        .type-badge.dragon { background: linear-gradient(135deg, #6366F1, #4F46E5); }
+        .type-badge.ice { background: linear-gradient(135deg, #06B6D4, #0891B2); }
+        .type-badge.fighting { background: linear-gradient(135deg, #DC2626, #B91C1C); }
+        .type-badge.poison { background: linear-gradient(135deg, #7C3AED, #6D28D9); }
+        .type-badge.ground { background: linear-gradient(135deg, #D97706, #B45309); }
+        .type-badge.flying { background: linear-gradient(135deg, #818CF8, #6366F1); }
+        .type-badge.bug { background: linear-gradient(135deg, #10B981, #047857); }
+        .type-badge.rock { background: linear-gradient(135deg, #78716C, #57534E); }
+        .type-badge.ghost { background: linear-gradient(135deg, #3730A3, #312E81); }
+        .type-badge.dark { background: linear-gradient(135deg, #1F2937, #111827); }
+        .type-badge.steel { background: linear-gradient(135deg, #6B7280, #4B5563); }
+        .type-badge.fairy { background: linear-gradient(135deg, #EC4899, #DB2777); }
+        .type-badge.normal { background: linear-gradient(135deg, #9CA3AF, #6B7280); }
+        .stat-bar {
+            background: #1E293B;
+            border: 1px solid #475569;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 8px;
+        }
+        .stat-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10B981, #059669);
+            transition: width 0.5s ease;
+        }
+        .calculator-panel {
+            background: linear-gradient(135deg, #1E293B, #334155);
+            border: 2px solid #475569;
+            border-radius: 16px;
+            padding: 24px;
+        }
+        .type-selector {
+            background: #0F172A;
+            border: 2px solid #475569;
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .type-selector:hover {
+            border-color: #06B6D4;
+        }
+        .type-selector.selected {
+            border-color: #06B6D4;
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+        }
+        .multiplier-display {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .multiplier-0 { color: #6B7280; }
+        .multiplier-05 { color: #F59E0B; }
+        .multiplier-1 { color: #10B981; }
+        .multiplier-2 { color: #3B82F6; }
+        .multiplier-4 { color: #8B5CF6; }
+        .search-box {
+            background: #1E293B;
+            border: 2px solid #475569;
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            width: 100%;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: #06B6D4;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.3);
+        }
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #1E293B, #334155);
+            border: 2px solid #475569;
+            border-radius: 16px;
+            padding: 32px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+        }
+        .modal.active .modal-content {
+            transform: scale(1);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-white">
+    <!-- 导航栏 -->
+    <nav class="fixed top-0 left-0 right-0 z-50 nav-blur border-b border-slate-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">P</span>
+                    </div>
+                    <span class="orbitron font-bold text-xl text-cyan-400">POKÉBATTLE</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="index.html" class="text-white hover:text-cyan-300 transition-colors font-medium">首页</a>
+                    <a href="battle.html" class="text-white hover:text-cyan-300 transition-colors font-medium">对战模拟器</a>
+                    <a href="pokedex.html" class="text-cyan-400 hover:text-cyan-300 transition-colors font-medium">宝可梦图鉴</a>
+                    <a href="trainer.html" class="text-white hover:text-cyan-300 transition-colors font-medium">训练师档案</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主内容区域 -->
+    <div class="pt-16 min-h-screen pokedex-bg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- 标题区域 -->
+            <div class="text-center mb-8">
+                <h1 class="orbitron font-black text-4xl md:text-6xl text-cyan-400 mb-4">宝可梦图鉴</h1>
+                <p class="text-xl text-slate-300">探索宝可梦世界，了解每个宝可梦的特性和能力</p>
+            </div>
+
+            <!-- 搜索和筛选区域 -->
+            <div class="mb-8">
+                <div class="flex flex-col md:flex-row gap-4 mb-6">
+                    <div class="flex-1">
+                        <input type="text" id="search-input" class="search-box" placeholder="搜索宝可梦名称...">
+                    </div>
+                    <div class="flex gap-2 flex-wrap">
+                        <button class="type-filter active" data-type="all">全部</button>
+                        <button class="type-filter" data-type="fire">火系</button>
+                        <button class="type-filter" data-type="water">水系</button>
+                        <button class="type-filter" data-type="electric">电系</button>
+                        <button class="type-filter" data-type="grass">草系</button>
+                        <button class="type-filter" data-type="psychic">超能</button>
+                        <button class="type-filter" data-type="dragon">龙系</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 主内容区域 -->
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- 左侧宝可梦列表 -->
+                <div class="lg:col-span-2">
+                    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" id="pokemon-grid">
+                        <!-- 宝可梦卡片将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+
+                <!-- 右侧属性相克计算器 -->
+                <div class="lg:col-span-1">
+                    <div class="calculator-panel sticky top-24">
+                        <h3 class="orbitron font-bold text-2xl text-white mb-6 text-center">属性相克计算器</h3>
+                        
+                        <!-- 攻击方属性选择 -->
+                        <div class="mb-6">
+                            <h4 class="text-lg font-semibold text-white mb-3">攻击方属性</h4>
+                            <div class="grid grid-cols-3 gap-3" id="attack-types">
+                                <!-- 属性选择器将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+
+                        <!-- 防御方属性选择 -->
+                        <div class="mb-6">
+                            <h4 class="text-lg font-semibold text-white mb-3">防御方属性</h4>
+                            <div class="grid grid-cols-3 gap-3" id="defense-types">
+                                <!-- 属性选择器将通过JavaScript动态生成 -->
+                            </div>
+                        </div>
+
+                        <!-- 结果显示 -->
+                        <div class="text-center">
+                            <div class="multiplier-display" id="multiplier-result">1×</div>
+                            <div class="text-slate-300 mb-4" id="result-description">效果一般</div>
+                            <div class="text-sm text-slate-400" id="recommended-types">
+                                选择属性查看相克关系
+                            </div>
+                        </div>
+
+                        <!-- 属性相克图表 -->
+                        <div class="mt-8">
+                            <h4 class="text-lg font-semibold text-white mb-4">属性关系网络</h4>
+                            <div id="type-chart" style="height: 300px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 宝可梦详情弹窗 -->
+            <div class="modal" id="pokemon-modal">
+                <div class="modal-content">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="orbitron font-bold text-2xl text-white" id="modal-title">宝可梦详情</h3>
+                        <button class="text-slate-400 hover:text-white text-2xl" id="close-modal">&times;</button>
+                    </div>
+                    <div id="modal-content">
+                        <!-- 详细内容将通过JavaScript动态生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 页脚 -->
+    <footer class="bg-slate-900 border-t border-slate-700 py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center">
+                <div class="flex items-center justify-center space-x-2 mb-4">
+                    <div class="w-8 h-8 bg-gradient-to-r from-cyan-400 to-purple-500 rounded-full flex items-center justify-center">
+                        <span class="text-white font-bold text-sm">P</span>
+                    </div>
+                    <span class="orbitron font-bold text-xl text-cyan-400">POKÉBATTLE</span>
+                </div>
+                <p class="text-slate-400 mb-4">
+                    最专业的宝可梦对战模拟平台，为训练师们提供最真实的对战体验
+                </p>
+                <p class="text-slate-500 text-sm">
+                    © 2025 POKÉBATTLE. 本平台仅用于学习和娱乐目的。
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="pokedex.js"></script>
+</body>
+</html>
