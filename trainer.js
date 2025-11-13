@@ -1,5 +1,5 @@
-// 训练师数据
-const trainerData = {
+// 训练师数据（可持久化至 localStorage）
+const DEFAULT_TRAINER = {
     name: '训练师小明',
     level: 42,
     exp: 8450,
@@ -12,8 +12,11 @@ const trainerData = {
     streak: 15,
     perfectWins: 89,
     points: 2580,
-    avatar: '👨‍💻'
+    avatar: '👨‍💻',
+    location: '来自真新镇的宝可梦训练师'
 };
+
+let trainerData = loadTrainerFromStorage() || { ...DEFAULT_TRAINER };
 
 // 宝可梦数据（简版）
 const pokemonData = {
@@ -78,6 +81,7 @@ const elements = {
 
 // 初始化页面
 function initPage() {
+    renderTrainerProfile();
     renderTeamGrid();
     renderAchievements();
     renderBattleHistory();
@@ -193,6 +197,71 @@ function renderAchievements() {
         
         elements.achievementsGrid.appendChild(badge);
     });
+}
+
+// ========== 训练师资料 编辑/存储 ===========
+function renderTrainerProfile() {
+    // fill profile UI from trainerData
+    const avatarEl = document.getElementById('trainer-avatar');
+    const nameEl = document.getElementById('trainer-name');
+    const rankEl = document.getElementById('trainer-rank');
+    const locationEl = document.getElementById('trainer-location');
+    const levelEl = document.getElementById('stat-level');
+    const winsEl = document.getElementById('stat-wins');
+    const lossesEl = document.getElementById('stat-losses');
+    const winrateEl = document.getElementById('stat-winrate');
+    const levelLabel = document.getElementById('level-progress-label');
+    const levelExpLabel = document.getElementById('level-exp-label');
+    const levelFill = document.getElementById('level-fill');
+
+    if (avatarEl) avatarEl.textContent = trainerData.avatar || '👤';
+    if (nameEl) nameEl.textContent = trainerData.name;
+    if (rankEl) rankEl.textContent = trainerData.rank;
+    if (locationEl) locationEl.textContent = trainerData.location || '';
+    if (levelEl) levelEl.textContent = trainerData.level;
+    if (winsEl) winsEl.textContent = trainerData.wins;
+    if (lossesEl) lossesEl.textContent = trainerData.losses;
+    if (winrateEl) winrateEl.textContent = (trainerData.winRate || 0) + '%';
+    if (levelLabel) levelLabel.textContent = `等级进度 (${trainerData.level} → ${trainerData.level + 1})`;
+    if (levelExpLabel) levelExpLabel.textContent = `${trainerData.exp} / ${trainerData.maxExp} EXP`;
+    if (levelFill) levelFill.style.width = Math.min(100, (trainerData.exp / trainerData.maxExp) * 100) + '%';
+}
+
+function saveTrainerToStorage() {
+    try {
+        localStorage.setItem('pokketrainer_profile', JSON.stringify(trainerData));
+    } catch (e) {
+        console.warn('无法保存训练师数据到 localStorage', e);
+    }
+}
+
+function loadTrainerFromStorage() {
+    try {
+        const raw = localStorage.getItem('pokketrainer_profile');
+        return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+        console.warn('无法从 localStorage 读取训练师数据', e);
+        return null;
+    }
+}
+
+function openEditProfileDialog() {
+    // 简单的 prompt 编辑（快速实现）。可替换为 modal。
+    const name = prompt('训练师名称：', trainerData.name);
+    if (name === null) return; // 取消
+    trainerData.name = name.trim() || trainerData.name;
+
+    const avatar = prompt('头像（一个 emoji 或文本）：', trainerData.avatar);
+    if (avatar !== null) trainerData.avatar = avatar || trainerData.avatar;
+
+    const rank = prompt('称号（例：钻石训练师）：', trainerData.rank);
+    if (rank !== null) trainerData.rank = rank || trainerData.rank;
+
+    const location = prompt('介绍/来自：', trainerData.location);
+    if (location !== null) trainerData.location = location || trainerData.location;
+
+    saveTrainerToStorage();
+    renderTrainerProfile();
 }
 
 // 渲染对战历史
@@ -417,6 +486,10 @@ function getTypeColor(index) {
 function setupEventListeners() {
     // 智能推荐按钮
     elements.autoTeamBtn.addEventListener('click', generateRecommendedTeam);
+    
+    // 编辑档案按钮（简单 prompt 实现）
+    const editBtn = document.getElementById('edit-profile-btn');
+    if (editBtn) editBtn.addEventListener('click', openEditProfileDialog);
     
     // 窗口大小调整时重新渲染图表
     window.addEventListener('resize', () => {

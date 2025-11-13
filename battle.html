@@ -10,160 +10,7 @@
     <script src="https://unpkg.com/splitting@1.0.6/dist/splitting.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/splitting@1.0.6/dist/splitting.css">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background: #0F172A;
-            overflow-x: hidden;
-        }
-        .orbitron {
-            font-family: 'Orbitron', monospace;
-        }
-        .battle-bg {
-            background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
-            position: relative;
-        }
-        .nav-blur {
-            backdrop-filter: blur(10px);
-            background: rgba(15, 23, 42, 0.8);
-        }
-        .pokemon-card {
-            background: linear-gradient(135deg, #1E293B, #334155);
-            border: 2px solid #475569;
-            transition: all 0.3s ease;
-        }
-        .pokemon-card:hover {
-            border-color: #06B6D4;
-            box-shadow: 0 10px 25px rgba(6, 182, 212, 0.2);
-            transform: translateY(-5px);
-        }
-        .pokemon-card.selected {
-            border-color: #06B6D4;
-            box-shadow: 0 0 20px rgba(6, 182, 212, 0.4);
-        }
-        .battle-arena {
-            background: radial-gradient(circle at center, #1E293B 0%, #0F172A 100%);
-            border: 3px solid #06B6D4;
-            position: relative;
-            overflow: hidden;
-        }
-        .battle-arena::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, transparent 30%, rgba(6, 182, 212, 0.1) 50%, transparent 70%);
-            animation: scan 3s linear infinite;
-        }
-        @keyframes scan {
-            0% { transform: translateX(-100%); }
-            100% { transform: translateX(100%); }
-        }
-        .health-bar {
-            background: #1E293B;
-            border: 2px solid #475569;
-            border-radius: 20px;
-            overflow: hidden;
-            position: relative;
-        }
-        .health-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #10B981, #059669);
-            transition: width 0.5s ease;
-            position: relative;
-        }
-        .health-fill.low {
-            background: linear-gradient(90deg, #EF4444, #DC2626);
-        }
-        .health-fill.medium {
-            background: linear-gradient(90deg, #F59E0B, #D97706);
-        }
-        .skill-button {
-            background: linear-gradient(135deg, #1E293B, #334155);
-            border: 2px solid #475569;
-            color: white;
-            padding: 12px 16px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        .skill-button:hover {
-            border-color: #06B6D4;
-            box-shadow: 0 5px 15px rgba(6, 182, 212, 0.3);
-            transform: translateY(-2px);
-        }
-        .skill-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-        .skill-button.fire { border-color: #EF4444; }
-        .skill-button.water { border-color: #3B82F6; }
-        .skill-button.electric { border-color: #F59E0B; }
-        .skill-button.grass { border-color: #10B981; }
-        .skill-button.psychic { border-color: #8B5CF6; }
-        .battle-log {
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid #475569;
-            border-radius: 12px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        .battle-log::-webkit-scrollbar {
-            width: 6px;
-        }
-        .battle-log::-webkit-scrollbar-track {
-            background: #1E293B;
-        }
-        .battle-log::-webkit-scrollbar-thumb {
-            background: #06B6D4;
-            border-radius: 3px;
-        }
-        .damage-text {
-            position: absolute;
-            color: #EF4444;
-            font-weight: bold;
-            font-size: 24px;
-            pointer-events: none;
-            z-index: 100;
-        }
-        .heal-text {
-            position: absolute;
-            color: #10B981;
-            font-weight: bold;
-            font-size: 24px;
-            pointer-events: none;
-            z-index: 100;
-        }
-        .type-badge {
-            background: linear-gradient(135deg, #06B6D4, #0891B2);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .type-badge.fire { background: linear-gradient(135deg, #EF4444, #DC2626); }
-        .type-badge.water { background: linear-gradient(135deg, #3B82F6, #1D4ED8); }
-        .type-badge.electric { background: linear-gradient(135deg, #F59E0B, #D97706); }
-        .type-badge.grass { background: linear-gradient(135deg, #10B981, #059669); }
-        .type-badge.psychic { background: linear-gradient(135deg, #8B5CF6, #7C3AED); }
-        .battle-effect {
-            position: absolute;
-            pointer-events: none;
-            z-index: 50;
-        }
-        .vs-divider {
-            background: linear-gradient(135deg, #06B6D4, #8B5CF6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-    </style>
+    <link rel="stylesheet" href="styles/battle.css">
 </head>
 <body class="bg-slate-900 text-white">
     <!-- 导航栏 -->
@@ -198,84 +45,86 @@
             <!-- 对战界面 -->
             <div class="grid lg:grid-cols-12 gap-8">
                 <!-- 左侧宝可梦选择 -->
-                <div class="lg:col-span-3">
-                    <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700">
-                        <h3 class="orbitron font-bold text-xl text-white mb-6 text-center">我方宝可梦</h3>
-                        <div class="space-y-4" id="player-pokemon-list">
+                <div class="lg:col-span-2">
+                    <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 max-h-96 overflow-y-auto">
+                        <h3 class="orbitron font-bold text-lg text-white mb-4 text-center">我方宝可梦</h3>
+                        <div class="space-y-3" id="player-pokemon-list">
                             <!-- 宝可梦卡片将通过JavaScript动态生成 -->
                         </div>
                     </div>
                 </div>
 
-                <!-- 中央对战区域 -->
-                <div class="lg:col-span-6">
-                    <div class="battle-arena rounded-2xl p-8 h-96 relative">
+                <!-- 中央对战区域 + 战斗日志 -->
+                <div class="lg:col-span-8">
+                    <!-- 对战竞技场 -->
+                    <div class="battle-arena rounded-2xl p-6 h-80 relative mb-6">
                         <div class="h-full flex items-center justify-between relative z-10">
                             <!-- 我方宝可梦 -->
                             <div class="text-center" id="player-pokemon">
-                                <div class="w-24 h-24 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                                    <span class="text-3xl">❓</span>
+                                <div class="w-20 h-20 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full mx-auto mb-3 flex items-center justify-center poke-icon">
+                                    <span class="text-2xl">❓</span>
                                 </div>
-                                <div class="type-badge mb-2">未选择</div>
-                                <div class="text-sm text-slate-300 mb-2">请选择宝可梦</div>
-                                <div class="health-bar w-32 h-4 mx-auto">
+                                <div class="type-badge mb-2 poke-type text-xs">未选择</div>
+                                <div class="text-xs text-slate-300 mb-2 poke-name">请选择</div>
+                                <div class="health-bar w-24 h-3 mx-auto">
                                     <div class="health-fill" style="width: 0%"></div>
                                 </div>
-                                <div class="text-xs text-slate-400 mt-1">HP: 0/0</div>
+                                <div class="text-xs text-slate-400 mt-1 poke-hp">HP: 0/0</div>
                             </div>
 
                             <!-- VS标识 -->
                             <div class="text-center">
-                                <div class="orbitron font-black text-4xl vs-divider mb-4">VS</div>
-                                <div class="text-sm text-slate-400">对战开始</div>
+                                <div class="orbitron font-black text-3xl vs-divider mb-2">VS</div>
+                                <div class="text-xs text-slate-400" id="battle-status">准备开始</div>
                             </div>
 
                             <!-- 敌方宝可梦 -->
                             <div class="text-center" id="enemy-pokemon">
-                                <div class="w-24 h-24 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full mx-auto mb-4 flex items-center justify-center">
-                                    <span class="text-3xl">❓</span>
+                                <div class="w-20 h-20 bg-gradient-to-r from-gray-500 to-gray-600 rounded-full mx-auto mb-3 flex items-center justify-center poke-icon">
+                                    <span class="text-2xl">❓</span>
                                 </div>
-                                <div class="type-badge mb-2">未选择</div>
-                                <div class="text-sm text-slate-300 mb-2">等待对手</div>
-                                <div class="health-bar w-32 h-4 mx-auto">
+                                <div class="type-badge mb-2 poke-type text-xs">未选择</div>
+                                <div class="text-xs text-slate-300 mb-2 poke-name">等待对手</div>
+                                <div class="health-bar w-24 h-3 mx-auto">
                                     <div class="health-fill" style="width: 0%"></div>
                                 </div>
-                                <div class="text-xs text-slate-400 mt-1">HP: 0/0</div>
+                                <div class="text-xs text-slate-400 mt-1 poke-hp">HP: 0/0</div>
                             </div>
                         </div>
                     </div>
 
+                    <!-- 战斗日志（固定在对战下方，始终可见） -->
+                    <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 h-48">
+                        <h3 class="orbitron font-bold text-sm text-white mb-2">战斗日志</h3>
+                        <div class="battle-log p-3 h-40" id="battle-log">
+                            <div class="text-xs text-slate-400">等待对战开始...</div>
+                        </div>
+                    </div>
+
                     <!-- 技能选择区域 -->
-                    <div class="mt-6 bg-slate-800 rounded-2xl p-6 border border-slate-700" id="skills-panel" style="display: none;">
-                        <h3 class="orbitron font-bold text-xl text-white mb-4 text-center">技能选择</h3>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="skill-buttons">
+                    <div class="mt-6 bg-slate-800 rounded-2xl p-4 border border-slate-700" id="skills-panel" style="display: none;">
+                        <h3 class="orbitron font-bold text-lg text-white mb-4 text-center">技能选择</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="skill-buttons">
                             <!-- 技能按钮将通过JavaScript动态生成 -->
                         </div>
-                        <div class="mt-4 text-center">
-                            <button class="bg-slate-700 hover:bg-slate-600 text-white px-6 py-2 rounded-lg font-semibold transition-colors" id="auto-battle">
-                                自动对战
+                        <div class="mt-4 text-center flex gap-3 justify-center">
+                            <button class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm" id="auto-battle">
+                                ▶️ 自动对战
+                            </button>
+                            <button class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors text-sm" id="reset-battle">
+                                🔄 重置对战
                             </button>
                         </div>
                     </div>
                 </div>
 
                 <!-- 右侧敌方宝可梦选择 -->
-                <div class="lg:col-span-3">
-                    <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700">
-                        <h3 class="orbitron font-bold text-xl text-white mb-6 text-center">敌方宝可梦</h3>
-                        <div class="space-y-4" id="enemy-pokemon-list">
+                <div class="lg:col-span-2">
+                    <div class="bg-slate-800 rounded-2xl p-4 border border-slate-700 max-h-96 overflow-y-auto">
+                        <h3 class="orbitron font-bold text-lg text-white mb-4 text-center">敌方宝可梦</h3>
+                        <div class="space-y-3" id="enemy-pokemon-list">
                             <!-- 敌方宝可梦卡片将通过JavaScript动态生成 -->
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 战斗日志 -->
-            <div class="mt-8">
-                <div class="bg-slate-800 rounded-2xl p-6 border border-slate-700">
-                    <h3 class="orbitron font-bold text-xl text-white mb-4">战斗日志</h3>
-                    <div class="battle-log p-4" id="battle-log">
-                        <div class="text-slate-400 text-sm">等待对战开始...</div>
                     </div>
                 </div>
             </div>
@@ -345,6 +194,6 @@
         </div>
     </footer>
 
-    <script src="battle.js"></script>
+    <script src="battle-enhanced.js"></script>
 </body>
 </html>

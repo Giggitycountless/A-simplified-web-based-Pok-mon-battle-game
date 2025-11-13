@@ -1,0 +1,155 @@
+/* ================================
+   POKÉBATTLE - 首页样式文件
+   ================================ */
+
+/* 全局样式 */
+body {
+    font-family: 'Inter', sans-serif;
+    background: #0F172A;
+    overflow-x: hidden;
+}
+
+.orbitron {
+    font-family: 'Orbitron', monospace;
+}
+
+/* 背景与渐变 */
+.hero-bg {
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
+    position: relative;
+}
+
+/* 发光效果 */
+.glow {
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+}
+
+.glow-purple {
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.3);
+}
+
+.text-glow {
+    text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+/* 卡片悬停效果 */
+.card-hover {
+    transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+    transform: translateY(-10px) rotateX(5deg);
+    box-shadow: 0 20px 40px rgba(6, 182, 212, 0.2);
+}
+
+/* 粒子背景 */
+.particle-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+}
+
+.content-overlay {
+    position: relative;
+    z-index: 10;
+}
+
+/* 对战竞技场 */
+.battle-arena {
+    background: url('resources/hero-battle-arena.png') center/cover;
+    position: relative;
+}
+
+.battle-arena::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.7);
+}
+
+/* 导航栏模糊效果 */
+.nav-blur {
+    backdrop-filter: blur(10px);
+    background: rgba(15, 23, 42, 0.8);
+}
+
+/* 技能图标 */
+.skill-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #06B6D4, #8B5CF6);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* 属性徽章 */
+.type-badge {
+    background: linear-gradient(135deg, #06B6D4, #0891B2);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+/* 对战按钮 */
+.battle-button {
+    background: linear-gradient(135deg, #F97316, #EA580C);
+    color: white;
+    border: none;
+    padding: 16px 32px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.battle-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(249, 115, 22, 0.3);
+}
+
+.battle-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: left 0.5s;
+}
+
+.battle-button:hover::before {
+    left: 100%;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .battle-arena {
+        min-height: 300px;
+    }
+
+    .orbitron {
+        font-size: 1.5rem;
+    }
+}

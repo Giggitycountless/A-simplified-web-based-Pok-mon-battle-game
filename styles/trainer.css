@@ -1,0 +1,195 @@
+/* ================================
+   POKÉBATTLE - 训练师档案样式文件
+   ================================ */
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: #0F172A;
+    overflow-x: hidden;
+}
+
+.orbitron {
+    font-family: 'Orbitron', monospace;
+}
+
+/* 背景 */
+.trainer-bg {
+    background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
+    position: relative;
+}
+
+.nav-blur {
+    backdrop-filter: blur(10px);
+    background: rgba(15, 23, 42, 0.8);
+}
+
+/* 个人资料卡片 */
+.profile-card {
+    background: linear-gradient(135deg, #1E293B, #334155);
+    border: 2px solid #475569;
+    border-radius: 20px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('resources/trainer-dashboard.png') center/cover;
+    opacity: 0.1;
+    z-index: 0;
+}
+
+.profile-content {
+    position: relative;
+    z-index: 1;
+}
+
+/* 统计卡片 */
+.stat-card {
+    background: linear-gradient(135deg, #1E293B, #334155);
+    border: 2px solid #475569;
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    border-color: #06B6D4;
+    box-shadow: 0 10px 25px rgba(6, 182, 212, 0.2);
+    transform: translateY(-5px);
+}
+
+/* 成就徽章 */
+.achievement-badge {
+    background: linear-gradient(135deg, #1E293B, #334155);
+    border: 2px solid #475569;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.achievement-badge.unlocked {
+    border-color: #06B6D4;
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
+}
+
+.achievement-badge.locked {
+    opacity: 0.5;
+    filter: grayscale(1);
+}
+
+/* 等级进度条 */
+.level-progress {
+    background: #1E293B;
+    border: 2px solid #475569;
+    border-radius: 20px;
+    overflow: hidden;
+    height: 20px;
+    position: relative;
+}
+
+.level-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #06B6D4, #0891B2);
+    transition: width 0.5s ease;
+    position: relative;
+}
+
+.level-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+/* 战队卡位 */
+.team-slot {
+    background: linear-gradient(135deg, #1E293B, #334155);
+    border: 2px dashed #475569;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.team-slot:hover {
+    border-color: #06B6D4;
+    background: rgba(6, 182, 212, 0.1);
+}
+
+.team-slot.filled {
+    border-style: solid;
+    border-color: #06B6D4;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1), rgba(139, 92, 246, 0.1));
+}
+
+/* 等级徽章 */
+.rank-badge {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    display: inline-block;
+}
+
+/* 对战历史条目 */
+.battle-history-item {
+    background: linear-gradient(135deg, #1E293B, #334155);
+    border: 1px solid #475569;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.win-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+}
+
+.win-indicator.win { background: #10B981; }
+.win-indicator.lose { background: #EF4444; }
+
+/* 图表容器 */
+.chart-container {
+    background: linear-gradient(135deg, #1E293B, #334155);
+    border: 2px solid #475569;
+    border-radius: 16px;
+    padding: 24px;
+    height: 400px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .profile-card {
+        padding: 20px;
+    }
+
+    .chart-container {
+        height: 300px;
+    }
+}
