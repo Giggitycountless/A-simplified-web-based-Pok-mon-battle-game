@@ -1,41 +1,27 @@
 /**
  * 宝可梦对战系统 - 微回合调度器集成版
  * 基于事件驱动的现代化战斗系统
+ *
+ * 数据依赖：
+ * - data/pokemon.js: 宝可梦数据（pokemonData）
+ * - data/types.js: 属性系统数据（typeMatchups, typeNames, typeColors）
+ *
+ * 请确保在 HTML 中先加载数据文件，再加载本文件
  */
 
-// 宝可梦数据库
-const pokemonData = {
-    1: { id: 1, name: '妙蛙种子', type: ['grass', 'poison'], hp: 45, attack: 49, defense: 49, speed: 45, skills: [
-        { name: '撞击', type: 'normal', power: 40, accuracy: 100, priority: 0 },
-        { name: '藤鞭', type: 'grass', power: 45, accuracy: 100, priority: 0 },
-        { name: '毒粉', type: 'poison', power: 0, accuracy: 75, priority: 0, effect: { type: 'status', status: 'poison' } }
-    ]},
-    4: { id: 4, name: '小火龙', type: ['fire'], hp: 39, attack: 52, defense: 43, speed: 65, skills: [
-        { name: '撞击', type: 'normal', power: 40, accuracy: 100, priority: 0 },
-        { name: '火花', type: 'fire', power: 40, accuracy: 100, priority: 0 },
-        { name: '烟幕', type: 'normal', power: 0, accuracy: 100, priority: 0, effect: { type: 'stat', stat: 'accuracy', change: -1 } }
-    ]},
-    7: { id: 7, name: '杰尼龟', type: ['water'], hp: 44, attack: 48, defense: 65, speed: 43, skills: [
-        { name: '撞击', type: 'normal', power: 40, accuracy: 100, priority: 0 },
-        { name: '水枪', type: 'water', power: 40, accuracy: 100, priority: 0 },
-        { name: '缩入壳中', type: 'water', power: 0, accuracy: 100, priority: 1, effect: { type: 'stat', stat: 'defense', change: 1 } }
-    ]},
-    25: { id: 25, name: '皮卡丘', type: ['electric'], hp: 35, attack: 55, defense: 40, speed: 90, skills: [
-        { name: '撞击', type: 'normal', power: 40, accuracy: 100, priority: 0 },
-        { name: '电击', type: 'electric', power: 40, accuracy: 100, priority: 0 },
-        { name: '电光一闪', type: 'normal', power: 40, accuracy: 100, priority: 1 }
-    ]}
-};
-
-// 属性相克表
-const typeMatchups = {
-    fire: { grass: 2, water: 0.5, fire: 0.5, ice: 2, bug: 2, steel: 2 },
-    water: { fire: 2, grass: 0.5, water: 0.5, ground: 2, rock: 2 },
-    grass: { water: 2, fire: 0.5, grass: 0.5, ground: 2, rock: 2, poison: 0.5, flying: 0.5, bug: 0.5, steel: 0.5 },
-    electric: { water: 2, flying: 2, electric: 0.5, grass: 0.5, ground: 0 },
-    normal: { rock: 0.5, ghost: 0, steel: 0.5 },
-    poison: { grass: 2, poison: 0.5, ground: 0.5, rock: 0.5, ghost: 0.5, steel: 0 }
-};
+// 数据验证：确保必要的全局数据已加载
+if (typeof pokemonData === 'undefined') {
+    console.error('❌ 错误：pokemonData 未定义！请确保已加载 data/pokemon.js');
+}
+if (typeof typeMatchups === 'undefined') {
+    console.error('❌ 错误：typeMatchups 未定义！请确保已加载 data/types.js');
+}
+if (typeof typeNames === 'undefined') {
+    console.error('❌ 错误：typeNames 未定义！请确保已加载 data/types.js');
+}
+if (typeof typeColors === 'undefined') {
+    console.error('❌ 错误：typeColors 未定义！请确保已加载 data/types.js');
+}
 
 // 游戏状态（简化版）
 let gameState = {
@@ -55,50 +41,6 @@ let elements = {};
 
 // 微回合调度器实例
 let microTurnScheduler = null;
-
-// 属性名称映射
-const typeNames = {
-    fire: '火系',
-    water: '水系',
-    grass: '草系',
-    electric: '电系',
-    normal: '一般',
-    poison: '毒系',
-    ice: '冰系',
-    bug: '虫系',
-    steel: '钢系',
-    ground: '地面系',
-    rock: '岩石系',
-    flying: '飞行系',
-    ghost: '幽灵系',
-    psychic: '超能力系',
-    fighting: '格斗系',
-    dark: '恶系',
-    dragon: '龙系',
-    fairy: '妖精系'
-};
-
-// 属性颜色映射
-const typeColors = {
-    fire: 'from-red-500 to-orange-600',
-    water: 'from-blue-500 to-cyan-600',
-    grass: 'from-green-500 to-emerald-600',
-    electric: 'from-yellow-400 to-amber-500',
-    normal: 'from-gray-400 to-slate-500',
-    poison: 'from-purple-500 to-violet-600',
-    ice: 'from-cyan-300 to-blue-400',
-    bug: 'from-lime-500 to-green-600',
-    steel: 'from-slate-400 to-gray-500',
-    ground: 'from-amber-600 to-yellow-700',
-    rock: 'from-stone-500 to-amber-700',
-    flying: 'from-indigo-300 to-sky-400',
-    ghost: 'from-purple-600 to-indigo-700',
-    psychic: 'from-pink-500 to-purple-600',
-    fighting: 'from-red-600 to-orange-700',
-    dark: 'from-gray-700 to-slate-800',
-    dragon: 'from-indigo-600 to-purple-700',
-    fairy: 'from-pink-400 to-rose-500'
-};
 
 // ==================== 初始化系统 ====================
 
