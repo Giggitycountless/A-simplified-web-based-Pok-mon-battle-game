@@ -301,9 +301,21 @@
         </div>
     </div>
 
-    <!-- 加载核心系统 -->
+    <!-- 加载顺序说明：
+         1. 数据文件（pokemon.js, types.js）
+         2. 核心系统（EventBus.js, MicroTurnScheduler.js）
+         3. 主逻辑（battle-enhanced-micro.js）
+    -->
+
+    <!-- 1. 加载数据文件 -->
+    <script src="data/pokemon.js"></script>
+    <script src="data/types.js"></script>
+
+    <!-- 2. 加载核心系统 -->
     <script src="systems/core/EventBus.js"></script>
     <script src="systems/core/MicroTurnScheduler.js"></script>
+
+    <!-- 3. 加载主逻辑 -->
     <script src="battle-enhanced-micro.js"></script>
 </body>
 </html>
