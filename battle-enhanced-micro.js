@@ -130,24 +130,52 @@ function createPokemonCard(pokemon, key, side) {
 
 function renderSkillButtons() {
     if (!elements.skillButtons || !gameState.playerPokemon) return;
-    
+
     elements.skillButtons.innerHTML = '';
-    
-    gameState.playerPokemon.skills.forEach((skill, index) => {
+
+    gameState.playerPokemon.skills.forEach((skill) => {
         const button = document.createElement('button');
-        button.className = 'skill-button bg-slate-600 hover:bg-slate-500 text-white px-3 py-2 rounded text-xs font-semibold transition-all border border-slate-500';
-        button.textContent = skill.name;
+        button.className = 'skill-button bg-slate-600 hover:bg-slate-500 text-white px-3 py-2 rounded text-xs font-semibold transition-all border border-slate-500 relative group';
+
+        // Create skill name and info
+        const skillName = document.createElement('div');
+        skillName.className = 'font-bold mb-1';
+        skillName.textContent = skill.name;
+
+        const skillInfo = document.createElement('div');
+        skillInfo.className = 'text-xs opacity-75';
+
+        // Build skill info text
+        let infoText = `威力: ${skill.power || '-'} | 命中: ${skill.accuracy}%`;
+        if (skill.priority > 0) {
+            infoText += ` | 先制+${skill.priority}`;
+        }
+        skillInfo.textContent = infoText;
+
+        button.appendChild(skillName);
+        button.appendChild(skillInfo);
+
+        // Add tooltip with description
+        if (skill.description) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'skill-tooltip absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-slate-900 text-white text-xs rounded-lg shadow-lg border border-slate-700 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none w-48 z-50';
+            tooltip.textContent = skill.description;
+            button.appendChild(tooltip);
+        }
+
         button.onclick = () => useSkill(skill);
-        
+
         const typeColor = {
             fire: 'border-red-500',
             water: 'border-blue-500',
             grass: 'border-green-500',
             electric: 'border-yellow-500',
             normal: 'border-gray-500',
-            poison: 'border-purple-500'
+            poison: 'border-purple-500',
+            ground: 'border-yellow-700',
+            ice: 'border-cyan-400'
         }[skill.type] || 'border-gray-500';
-        
+
         button.classList.add(typeColor);
         elements.skillButtons.appendChild(button);
     });
@@ -371,6 +399,8 @@ function updatePokemonDisplay(pokemon, side = null) {
     const type = display.querySelector('.poke-type');
     const hp = display.querySelector('.poke-hp');
     const healthFill = display.querySelector('.health-fill');
+    const itemDisplay = display.querySelector('.poke-item');
+    const itemName = display.querySelector('.item-name');
 
     if (icon) {
         const typeColors = {
@@ -393,6 +423,16 @@ function updatePokemonDisplay(pokemon, side = null) {
         type.className = `type-badge mb-1 poke-type text-xs inline-block bg-${pokemon.type[0]}`;
     }
     if (hp) hp.textContent = `HP: ${pokemon.hp}/${pokemon.maxHp}`;
+
+    // Display held item if present
+    if (itemDisplay && itemName) {
+        if (pokemon.heldItem) {
+            itemName.textContent = pokemon.heldItem;
+            itemDisplay.style.display = 'block';
+        } else {
+            itemDisplay.style.display = 'none';
+        }
+    }
 
     if (healthFill) {
         const hpPercent = (pokemon.hp / pokemon.maxHp) * 100;
@@ -618,6 +658,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
         .skill-button:not(:disabled):active {
             transform: translateY(0);
+        }
+
+        /* 技能提示框样式 */
+        .skill-tooltip {
+            white-space: normal;
+            line-height: 1.4;
+        }
+
+        .skill-button {
+            overflow: visible;
         }
 
         /* 🎨 属性关系展示区域样式 */

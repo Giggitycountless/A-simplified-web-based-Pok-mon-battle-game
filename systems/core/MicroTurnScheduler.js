@@ -237,10 +237,10 @@ class MicroTurnScheduler {
 
     async executeSkillAction(action) {
         const { pokemon, skill, side } = action;
-        const target = side === 'player' ? 
-            this.battleSystem.gameState.enemyPokemon : 
+        const target = side === 'player' ?
+            this.battleSystem.gameState.enemyPokemon :
             this.battleSystem.gameState.playerPokemon;
-        
+
         // 触发技能使用事件
         await this.eventBus.emit('move:use', {
             attacker: pokemon,
@@ -248,10 +248,10 @@ class MicroTurnScheduler {
             move: skill,
             side
         });
-        
+
         // 命中判定
         const hitResult = this.calculateHitChance(pokemon, target, skill);
-        
+
         if (hitResult.hit) {
             // 技能命中
             await this.eventBus.emit('move:hit', {
@@ -260,10 +260,18 @@ class MicroTurnScheduler {
                 move: skill,
                 side
             });
-            
+
+            // 计算属性相克倍率
+            const effectiveness = this.calculateTypeEffectiveness(skill.type, target.type);
+
+            // 显示属性相克信息
+            if (skill.power > 0) {
+                this.displayTypeEffectiveness(effectiveness);
+            }
+
             // 计算伤害
             const damage = this.battleSystem.calculateDamage(pokemon, target, skill);
-            
+
             if (damage > 0) {
                 // 造成伤害
                 await this.eventBus.emit('pokemon:damage', {
@@ -273,12 +281,12 @@ class MicroTurnScheduler {
                     attacker: pokemon
                 });
             }
-            
+
             // 处理技能效果
             if (skill.effect) {
                 await this.processSkillEffect(skill, pokemon, target);
             }
-            
+
         } else {
             // 技能未命中
             await this.eventBus.emit('move:miss', {
@@ -467,5 +475,56 @@ class MicroTurnScheduler {
             freeze: '冰冻'
         };
         return statusNames[status] || status;
+    }
+
+    /**
+     * 计算属性相克倍率
+     * @param {string} attackType - 攻击属性
+     * @param {Array} defenderTypes - 防御方的属性数组
+     * @returns {number} 属性相克倍率
+     */
+    calculateTypeEffectiveness(attackType, defenderTypes) {
+        let multiplier = 1;
+
+        // 检查 typeMatchups 是否存在
+        if (typeof typeMatchups === 'undefined') {
+            console.warn('⚠️ typeMatchups 未定义，无法计算属性相克');
+            return multiplier;
+        }
+
+        defenderTypes.forEach(defType => {
+            if (typeMatchups[attackType] && typeMatchups[attackType][defType] !== undefined) {
+                multiplier *= typeMatchups[attackType][defType];
+            }
+        });
+
+        return multiplier;
+    }
+
+    /**
+     * 显示属性相克信息
+     * @param {number} effectiveness - 属性相克倍率
+     */
+    displayTypeEffectiveness(effectiveness) {
+        if (effectiveness > 1) {
+            if (effectiveness >= 4) {
+                this.battleSystem.addBattleLog('💥 效果拔群！（4倍伤害）');
+            } else if (effectiveness >= 2) {
+                this.battleSystem.addBattleLog('✨ 效果拔群！');
+            } else {
+                this.battleSystem.addBattleLog(`✨ 效果拔群！（${effectiveness}倍伤害）`);
+            }
+        } else if (effectiveness < 1) {
+            if (effectiveness === 0) {
+                this.battleSystem.addBattleLog('🚫 没有效果...');
+            } else if (effectiveness <= 0.25) {
+                this.battleSystem.addBattleLog('🛡️ 效果不佳...（0.25倍伤害）');
+            } else if (effectiveness <= 0.5) {
+                this.battleSystem.addBattleLog('🛡️ 效果不佳...');
+            } else {
+                this.battleSystem.addBattleLog(`🛡️ 效果不佳...（${effectiveness}倍伤害）`);
+            }
+        }
+        // 如果 effectiveness === 1，不显示任何信息（普通效果）
     }
 }
