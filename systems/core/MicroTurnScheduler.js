@@ -1,5 +1,6 @@
 /**
  * 微回合调度器 - 核心战斗流程管理
+ * 重构版：使用模块化架构
  */
 class MicroTurnScheduler {
     constructor(battleSystem) {
@@ -8,7 +9,6 @@ class MicroTurnScheduler {
         this.currentTurn = 1;
         this.currentSubTurn = 0;
         this.actionQueue = [];
-        this.phaseHandlers = new Map();
 
         // ⏱️ 延迟配置（毫秒）
         this.delays = {
@@ -18,19 +18,35 @@ class MicroTurnScheduler {
             statusEffect: 250        // 状态效果延迟
         };
 
-        this.initializePhaseHandlers();
+        // 初始化模块化组件
+        this.initializeModules();
         this.setupEventListeners();
     }
 
-    // 初始化阶段处理器
-    initializePhaseHandlers() {
-        this.phaseHandlers.set('TURN_START', this.handleTurnStart.bind(this));
-        this.phaseHandlers.set('ACTION_PRIORITY', this.handleActionPriority.bind(this));
-        this.phaseHandlers.set('ACTION_EXECUTE', this.handleActionExecute.bind(this));
-        this.phaseHandlers.set('ABILITY_TRIGGER', this.handleAbilityTrigger.bind(this));
-        this.phaseHandlers.set('STATUS_EFFECT', this.handleStatusEffect.bind(this));
-        this.phaseHandlers.set('TURN_END', this.handleTurnEnd.bind(this));
+    /**
+     * 初始化模块化组件
+     */
+    initializeModules() {
+        // 状态效果管理器
+        this.statusEffectManager = new StatusEffectManager(this.eventBus);
+
+        // 动作执行器
+        this.actionExecutor = new ActionExecutor(
+            this.eventBus,
+            DamageCalculator,
+            TypeEffectiveness,
+            this.statusEffectManager
+        );
+
+        // 战斗阶段处理器
+        this.phaseHandler = new BattlePhaseHandler(
+            this.eventBus,
+            this.actionExecutor,
+            this.statusEffectManager
+        );
     }
+
+
 
     // 设置事件监听器
     setupEventListeners() {
@@ -111,22 +127,74 @@ class MicroTurnScheduler {
     async executePhase(phaseName, data = null) {
         const subTurnId = `${this.currentTurn}-${++this.currentSubTurn}`;
         console.log(`📍 [${subTurnId}] 执行阶段: ${phaseName}`);
-        
+
         // 触发阶段开始事件
         await this.eventBus.emit(`phase:${phaseName.toLowerCase()}:start`, {
             turn: this.currentTurn,
             subTurn: this.currentSubTurn,
             data
         });
-        
-        // 执行阶段处理器
-        const handler = this.phaseHandlers.get(phaseName);
+
+        // 使用模块化的阶段处理器
         let result = null;
-        
-        if (handler) {
-            result = await handler(data);
+
+        switch (phaseName) {
+            case 'TURN_START':
+                await this.phaseHandler.handleTurnStart(
+                    this.battleSystem.gameState,
+                    this.currentTurn,
+                    this.battleSystem.addBattleLog.bind(this.battleSystem)
+                );
+                break;
+
+            case 'ACTION_PRIORITY':
+                const { playerAction, opponentAction } = data;
+                const actions = [];
+
+                if (playerAction) {
+                    actions.push({
+                        ...playerAction,
+                        pokemon: this.battleSystem.gameState.playerPokemon,
+                        target: this.battleSystem.gameState.enemyPokemon,
+                        side: 'player'
+                    });
+                }
+
+                if (opponentAction) {
+                    actions.push({
+                        ...opponentAction,
+                        pokemon: this.battleSystem.gameState.enemyPokemon,
+                        target: this.battleSystem.gameState.playerPokemon,
+                        side: 'enemy'
+                    });
+                }
+
+                result = this.phaseHandler.handleActionPriority(actions);
+                break;
+
+            case 'ACTION_EXECUTE':
+                await this.phaseHandler.handleActionExecute(
+                    data,
+                    this.battleSystem.addBattleLog.bind(this.battleSystem)
+                );
+                break;
+
+            case 'ABILITY_TRIGGER':
+                await this.phaseHandler.handleAbilityTrigger(this.battleSystem.gameState);
+                break;
+
+            case 'STATUS_EFFECT':
+                await this.phaseHandler.handleStatusEffect(this.battleSystem.gameState);
+                break;
+
+            case 'TURN_END':
+                await this.phaseHandler.handleTurnEnd(
+                    this.currentTurn,
+                    this.battleSystem.addBattleLog.bind(this.battleSystem)
+                );
+                break;
         }
-        
+
         // 触发阶段结束事件
         await this.eventBus.emit(`phase:${phaseName.toLowerCase()}:end`, {
             turn: this.currentTurn,
@@ -134,260 +202,11 @@ class MicroTurnScheduler {
             data,
             result
         });
-        
+
         return result;
     }
 
-    // ==================== 阶段处理器 ====================
-
-    async handleTurnStart(data) {
-        this.battleSystem.addBattleLog(`⏰ 第 ${this.currentTurn} 回合开始`);
-        
-        // 天气效果
-        if (this.battleSystem.gameState.weather) {
-            await this.eventBus.emit('weather:tick', {
-                weather: this.battleSystem.gameState.weather
-            });
-        }
-        
-        // PP恢复等
-        await this.eventBus.emit('turn:start', {
-            turn: this.currentTurn
-        });
-    }
-
-    async handleActionPriority(data) {
-        const { playerAction, opponentAction } = data;
-        const actions = [];
-        
-        if (playerAction) {
-            actions.push({
-                ...playerAction,
-                pokemon: this.battleSystem.gameState.playerPokemon,
-                side: 'player'
-            });
-        }
-        
-        if (opponentAction) {
-            actions.push({
-                ...opponentAction,
-                pokemon: this.battleSystem.gameState.enemyPokemon,
-                side: 'enemy'
-            });
-        }
-        
-        // 按优先级和速度排序
-        return this.sortActionsByPriority(actions);
-    }
-
-    async handleActionExecute(action) {
-        const { type, pokemon, side } = action;
-        
-        console.log(`⚡ 执行动作: ${pokemon.name} 使用 ${action.skill?.name || action.type}`);
-        
-        if (type === 'skill' && action.skill) {
-            await this.executeSkillAction(action);
-        } else if (type === 'switch') {
-            await this.executeSwitchAction(action);
-        } else if (type === 'item') {
-            await this.executeItemAction(action);
-        }
-    }
-
-    async handleAbilityTrigger(data) {
-        // 触发所有宝可梦的特性
-        const allPokemon = [
-            this.battleSystem.gameState.playerPokemon,
-            this.battleSystem.gameState.enemyPokemon
-        ].filter(p => p && p.hp > 0);
-        
-        for (const pokemon of allPokemon) {
-            if (pokemon.ability) {
-                await this.eventBus.emit('ability:check', {
-                    pokemon,
-                    ability: pokemon.ability,
-                    trigger: 'turn_ability_phase'
-                });
-            }
-        }
-    }
-
-    async handleStatusEffect(data) {
-        const allPokemon = [
-            this.battleSystem.gameState.playerPokemon,
-            this.battleSystem.gameState.enemyPokemon
-        ].filter(p => p && p.hp > 0);
-        
-        for (const pokemon of allPokemon) {
-            if (pokemon.status && pokemon.status !== 'normal') {
-                await this.processStatusEffect(pokemon);
-            }
-        }
-    }
-
-    async handleTurnEnd(data) {
-        this.battleSystem.addBattleLog(`🔚 第 ${this.currentTurn} 回合结束`);
-        
-        await this.eventBus.emit('turn:end', {
-            turn: this.currentTurn
-        });
-    }
-
-    // ==================== 动作执行器 ====================
-
-    async executeSkillAction(action) {
-        const { pokemon, skill, side } = action;
-        const target = side === 'player' ?
-            this.battleSystem.gameState.enemyPokemon :
-            this.battleSystem.gameState.playerPokemon;
-
-        // 触发技能使用事件
-        await this.eventBus.emit('move:use', {
-            attacker: pokemon,
-            defender: target,
-            move: skill,
-            side
-        });
-
-        // 命中判定
-        const hitResult = this.calculateHitChance(pokemon, target, skill);
-
-        if (hitResult.hit) {
-            // 技能命中
-            await this.eventBus.emit('move:hit', {
-                attacker: pokemon,
-                defender: target,
-                move: skill,
-                side
-            });
-
-            // 计算属性相克倍率
-            const effectiveness = this.calculateTypeEffectiveness(skill.type, target.type);
-
-            // 显示属性相克信息
-            if (skill.power > 0) {
-                this.displayTypeEffectiveness(effectiveness);
-            }
-
-            // 计算伤害
-            const damage = this.battleSystem.calculateDamage(pokemon, target, skill);
-
-            if (damage > 0) {
-                // 造成伤害
-                await this.eventBus.emit('pokemon:damage', {
-                    pokemon: target,
-                    damage,
-                    source: skill,
-                    attacker: pokemon
-                });
-            }
-
-            // 处理技能效果
-            if (skill.effect) {
-                await this.processSkillEffect(skill, pokemon, target);
-            }
-
-        } else {
-            // 技能未命中
-            await this.eventBus.emit('move:miss', {
-                attacker: pokemon,
-                defender: target,
-                move: skill,
-                side
-            });
-        }
-    }
-
-    async executeSwitchAction(action) {
-        // 换宝可梦逻辑
-        this.battleSystem.addBattleLog(`🔄 ${action.pokemon.name} 准备换宝可梦`);
-    }
-
-    async executeItemAction(action) {
-        // 使用道具逻辑
-        this.battleSystem.addBattleLog(`🎒 ${action.pokemon.name} 使用了道具`);
-    }
-
-    // ==================== 工具方法 ====================
-
-    sortActionsByPriority(actions) {
-        return actions.sort((a, b) => {
-            // 1. 优先级比较
-            const priorityA = a.skill?.priority || 0;
-            const priorityB = b.skill?.priority || 0;
-            
-            if (priorityA !== priorityB) {
-                return priorityB - priorityA;
-            }
-            
-            // 2. 速度比较
-            const speedA = this.getEffectiveSpeed(a.pokemon);
-            const speedB = this.getEffectiveSpeed(b.pokemon);
-            
-            if (speedA !== speedB) {
-                return speedB - speedA;
-            }
-            
-            // 3. 随机决定
-            return Math.random() - 0.5;
-        });
-    }
-
-    getEffectiveSpeed(pokemon) {
-        let speed = pokemon.speed || pokemon.stats?.speed || 100;
-        
-        // 应用状态效果
-        if (pokemon.status === 'paralysis') {
-            speed = Math.floor(speed * 0.25);
-        }
-        
-        return speed;
-    }
-
-    calculateHitChance(attacker, defender, skill) {
-        const baseAccuracy = skill.accuracy || 100;
-        const random = Math.random() * 100;
-        
-        return {
-            hit: random <= baseAccuracy,
-            accuracy: baseAccuracy,
-            roll: random
-        };
-    }
-
-    async processSkillEffect(skill, attacker, target) {
-        if (skill.effect?.type === 'status') {
-            await this.eventBus.emit('status:apply', {
-                pokemon: target,
-                status: skill.effect.status,
-                source: skill
-            });
-        }
-    }
-
-    async processStatusEffect(pokemon) {
-        const { status } = pokemon;
-        
-        switch (status) {
-            case 'poison':
-                const poisonDamage = Math.floor(pokemon.maxHp / 8);
-                await this.eventBus.emit('pokemon:damage', {
-                    pokemon,
-                    damage: poisonDamage,
-                    source: 'poison'
-                });
-                break;
-                
-            case 'burn':
-                const burnDamage = Math.floor(pokemon.maxHp / 16);
-                await this.eventBus.emit('pokemon:damage', {
-                    pokemon,
-                    damage: burnDamage,
-                    source: 'burn'
-                });
-                break;
-        }
-    }
+    // ==================== 工具方法（保留用于向后兼容）====================
 
     // ==================== 事件处理器 ====================
 
@@ -467,64 +286,6 @@ class MicroTurnScheduler {
     }
 
     getStatusName(status) {
-        const statusNames = {
-            poison: '中毒',
-            burn: '灼伤',
-            paralysis: '麻痹',
-            sleep: '睡眠',
-            freeze: '冰冻'
-        };
-        return statusNames[status] || status;
-    }
-
-    /**
-     * 计算属性相克倍率
-     * @param {string} attackType - 攻击属性
-     * @param {Array} defenderTypes - 防御方的属性数组
-     * @returns {number} 属性相克倍率
-     */
-    calculateTypeEffectiveness(attackType, defenderTypes) {
-        let multiplier = 1;
-
-        // 检查 typeMatchups 是否存在
-        if (typeof typeMatchups === 'undefined') {
-            console.warn('⚠️ typeMatchups 未定义，无法计算属性相克');
-            return multiplier;
-        }
-
-        defenderTypes.forEach(defType => {
-            if (typeMatchups[attackType] && typeMatchups[attackType][defType] !== undefined) {
-                multiplier *= typeMatchups[attackType][defType];
-            }
-        });
-
-        return multiplier;
-    }
-
-    /**
-     * 显示属性相克信息
-     * @param {number} effectiveness - 属性相克倍率
-     */
-    displayTypeEffectiveness(effectiveness) {
-        if (effectiveness > 1) {
-            if (effectiveness >= 4) {
-                this.battleSystem.addBattleLog('💥 效果拔群！（4倍伤害）');
-            } else if (effectiveness >= 2) {
-                this.battleSystem.addBattleLog('✨ 效果拔群！');
-            } else {
-                this.battleSystem.addBattleLog(`✨ 效果拔群！（${effectiveness}倍伤害）`);
-            }
-        } else if (effectiveness < 1) {
-            if (effectiveness === 0) {
-                this.battleSystem.addBattleLog('🚫 没有效果...');
-            } else if (effectiveness <= 0.25) {
-                this.battleSystem.addBattleLog('🛡️ 效果不佳...（0.25倍伤害）');
-            } else if (effectiveness <= 0.5) {
-                this.battleSystem.addBattleLog('🛡️ 效果不佳...');
-            } else {
-                this.battleSystem.addBattleLog(`🛡️ 效果不佳...（${effectiveness}倍伤害）`);
-            }
-        }
-        // 如果 effectiveness === 1，不显示任何信息（普通效果）
+        return this.statusEffectManager.getStatusName(status);
     }
 }

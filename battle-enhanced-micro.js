@@ -448,43 +448,17 @@ function updatePokemonDisplay(pokemon, side = null) {
     }
 }
 
+// 使用模块化的伤害计算器
 function calculateDamage(attacker, defender, skill) {
-    if (skill.power === 0) return 0;
-    
-    const level = 50;
-    const attack = attacker.attack;
-    const defense = defender.defense;
-    const power = skill.power;
-    
-    // 基础伤害公式
-    let damage = Math.floor(((2 * level / 5 + 2) * power * attack / defense) / 50) + 2;
-    
-    // 属性相克
-    const effectiveness = calculateTypeMultiplier(skill.type, defender.type);
-    damage = Math.floor(damage * effectiveness);
-    
-    // 同属性加成
-    if (attacker.type.includes(skill.type)) {
-        damage = Math.floor(damage * 1.5);
-    }
-    
-    // 随机因子
-    const randomFactor = 0.85 + Math.random() * 0.15;
-    damage = Math.floor(damage * randomFactor);
-    
-    return Math.max(1, damage);
+    return DamageCalculator.calculateDamage(attacker, defender, skill, {
+        level: 50,
+        weather: gameState.weather
+    });
 }
 
+// 使用模块化的属性相克计算器
 function calculateTypeMultiplier(attackType, defenderTypes) {
-    let multiplier = 1;
-    
-    defenderTypes.forEach(defType => {
-        if (typeMatchups[attackType] && typeMatchups[attackType][defType] !== undefined) {
-            multiplier *= typeMatchups[attackType][defType];
-        }
-    });
-    
-    return multiplier;
+    return TypeEffectiveness.calculate(attackType, defenderTypes);
 }
 
 function checkBattleEnd() {
